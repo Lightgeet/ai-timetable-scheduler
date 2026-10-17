@@ -1,0 +1,1 @@
+"""Represent schedulable course sessions."""
