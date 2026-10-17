@@ -1,0 +1,1 @@
+"""Baseline backtracking search solver."""
