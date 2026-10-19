@@ -37,6 +37,37 @@ def parse_periods(value):
     return periods
 
 
+def parse_subject_requirements(value):
+    requirements = []
+
+    for item in parse_list(value):
+        parts = [part.strip() for part in item.split(":")]
+
+        if len(parts) not in (2, 3):
+            raise ValueError(
+                f"Invalid subject requirement {item!r}."
+            )
+
+        subject_id = parts[0].upper()
+        weekly_sessions = int(parts[1])
+        duration_slots = int(parts[2]) if len(parts) == 3 else 1
+
+        if weekly_sessions < 1 or duration_slots < 1:
+            raise ValueError(
+                "Weekly sessions and duration slots must be positive."
+            )
+
+        requirements.append(
+            SubjectRequirement(
+                subject_id=subject_id,
+                weekly_sessions=weekly_sessions,
+                duration_slots=duration_slots,
+            )
+        )
+
+    return requirements
+
+
 def load_timetable_csv(file):
     """Convert a single CSV into a SchedulingProblem."""
 
@@ -81,7 +112,7 @@ def load_timetable_csv(file):
                         id=record_id,
                         name=name,
                         subject_type=(
-                            row.get("subject_type") or "theory"
+                            (row.get("subject_type") or "theory").strip().lower()
                         ),
                     )
                 )
@@ -103,30 +134,10 @@ def load_timetable_csv(file):
                     )
                 )
 
-            elif kind == "class":
-                requirements = []
-
-           
-                for item in parse_list(
-                    row.get("subject_ids", "")
-                ):
-                    parts = item.split(":")
-
-                    if len(parts) != 2:
-                        raise ValueError(
-                            "Each subject requirement must use "
-                            "'SUBJECT_ID:WEEKLY_SESSIONS'"
-                        )
-
-                    subject_id = parts[0].strip()
-                    weekly_sessions = int(parts[1])
-
-                    requirements.append(
-                        SubjectRequirement(
-                            subject_id=subject_id,
-                            weekly_sessions=weekly_sessions,
-                        )
-                    )
+            elif kind=="class":
+                requirements=parse_subject_requirements(
+                    row.get("subject_ids","")
+                )
 
                 groups.append(
                     StudentGroup(
@@ -147,7 +158,7 @@ def load_timetable_csv(file):
                         name=name,
                         capacity=int(row.get("capacity") or 0),
                         room_type=(
-                            row.get("room_type") or "classroom"
+                            (row.get("room_type") or "classroom").strip().lower()
                         ),
                     )
                 )
